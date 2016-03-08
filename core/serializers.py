@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from core.models import NutritionalValue
 from rest_framework import serializers
 
 
@@ -20,3 +21,8 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 		user.save()
 
 		return user
+
+class NutritionalValueSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = NutritionalValue
+		fields = ('label', 'unit')

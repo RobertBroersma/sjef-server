@@ -15,22 +15,28 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from rest_framework import routers
+from django.contrib import admin
 
 from core import views as core_views
 from usersettings import views as usersettings_views
 from planning import views as planning_views
+from recipes import views as recipes_views
 
 from rest_framework_jwt import views as jwt_views
 
 router = routers.DefaultRouter()
 router.register(r'users', core_views.UserViewSet)
 router.register(r'profiles', usersettings_views.ProfileViewSet)
-router.register(r'planning', planning_views.DayPlanningViewSet)
+router.register(r'dayplannings', planning_views.DayPlanningViewSet)
+router.register(r'mealsettings', planning_views.MealSettingViewSet)
+router.register(r'recipes', recipes_views.RecipeViewSet)
+router.register(r'ingredients', recipes_views.IngredientTagViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     url(r'^', include(router.urls)),
+    url(r'^admin/', admin.site.urls),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^api-token-auth/', jwt_views.obtain_jwt_token),
 ]

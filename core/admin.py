@@ -1,3 +1,9 @@
 from django.contrib import admin
 
-# Register your models here.
+from core.models import Tag, NutritionalValue
+
+class TagAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(Tag, TagAdmin)
+admin.site.register(NutritionalValue, TagAdmin)

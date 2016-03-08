@@ -10,6 +10,15 @@ class Profile(models.Model):
     first_name = models.CharField(max_length=255, null=True)
     last_name = models.CharField(max_length=255, default="van der Henk")
 
+    def __str__(self):
+        name = ''
+        if (self.first_name):
+            name += self.first_name
+        if (self.last_name):
+            name += ' ' + self.last_name
+
+        return name
+
     @staticmethod
     def has_read_permission(request):
         return True

@@ -34,7 +34,6 @@ class TestProfile(BaseTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK, response)
         self.assertEqual(user.profile.first_name, 'John')
 
-    #profile list only returns self
     def test_profile_list_only_returns_self(self):
         user = self.create_account('Jan', 'password')
         otheruser = self.create_account('Other', 'user')
@@ -43,11 +42,11 @@ class TestProfile(BaseTest):
         url = reverse('profile-list')
         self.client.credentials(HTTP_AUTHORIZATION='JWT ' + token)
         response = self.client.get(url)
+        results = json.loads(response.content)['results']
 
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['id'], user.profile.__dict__['id'], response)
 
-    #cant view profile others'
     def test_cant_view_profile_thats_not_mine(self):
         user = self.create_account('Willem', 'Bliksem')
         otheruser = self.create_account('Berend', 'Tester')
@@ -59,9 +58,37 @@ class TestProfile(BaseTest):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    #cant update profiles of others
+    def test_cant_view_profile_thats_not_mine(self):
+        user = self.create_account('Willem', 'Bliksem')
+        otheruser = self.create_account('Berend', 'Tester')
+        token = self.get_token('Willem', 'Bliksem')
 
-    #cant delete profile
+        url = reverse('profile-detail', args=(otheruser.profile.id,))
+        self.client.credentials(HTTP_AUTHORIZATION='JWT ' + token)
+        response = self.client.patch(url, {'first_name': 'Henk'})
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_can_delete_profile_thats_mine(self):
+        user = self.create_account('Willem', 'Bliksem')
+        token = self.get_token('Willem', 'Bliksem')
+
+        url = reverse('profile-detail', args=(user.profile.id,))
+        self.client.credentials(HTTP_AUTHORIZATION='JWT ' + token)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_cant_delete_profile_thats_not_mine(self):
+        user = self.create_account('Willem', 'Bliksem')
+        otheruser = self.create_account('Berend', 'Tester')
+        token = self.get_token('Willem', 'Bliksem')
+
+        url = reverse('profile-detail', args=(otheruser.profile.id,))
+        self.client.credentials(HTTP_AUTHORIZATION='JWT ' + token)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_unauthenticated_profile_view(self):
         user = self.create_account('Henk', 'Tester')
