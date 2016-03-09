@@ -4,6 +4,7 @@ from django.db import models
 from dry_rest_permissions.generics import authenticated_users, allow_staff_or_superuser
 from core.models import Tag, NutritionalValue
 from usersettings.models import Profile
+from django.db.models.signals import pre_save
 
 class IngredientTag(models.Model):
     label = models.CharField(max_length=255)
@@ -53,6 +54,10 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(Tag, blank=True)
     nutritions = models.ManyToManyField(NutritionalValue, through=RecipeNutrition)
     owner = models.ForeignKey(Profile, on_delete=models.SET_NULL, blank=True, null=True)
+    energy = models.FloatField()
+    protein_relative = models.FloatField()
+    carbs_relative = models.FloatField()
+    fat_relative = models.FloatField()
 
     def __str__(self):
         return self.name.encode('ascii', 'replace')
@@ -71,3 +76,17 @@ class Recipe(models.Model):
 
     def has_object_write_permission(self, request):
         return request.user.profile == self.owner
+
+def calculate_nutrition(sender, instance, **kwargs):
+    energy = instance.recipenutrition_set.get(nutritional_value__label='calories').amount
+    protein = instance.recipenutrition_set.get(nutritional_value__label='protein').amount
+    carbs = instance.recipenutrition_set.get(nutritional_value__label='carbs').amount
+    fat = instance.recipenutrition_set.get(nutritional_value__label='fat').amount
+
+    if energy > 0:
+        instance.energy = energy
+        instance.protein_relative = 4 * protein / energy
+        instance.carbs_relative = 4 * carbs / energy
+        instance.fat_relative = 4 * fat / energy
+
+pre_save.connect(calculate_nutrition, sender=Recipe)

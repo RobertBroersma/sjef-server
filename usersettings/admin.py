@@ -1,3 +1,12 @@
 from django.contrib import admin
 
-# Register your models here.
+from usersettings.models import DRI, Profile
+
+class DRIInline(admin.TabularInline):
+    model = DRI
+    extra = 1
+
+class ProfileAdmin(admin.ModelAdmin):
+    inlines = (DRIInline,)
+
+admin.site.register(Profile, ProfileAdmin)

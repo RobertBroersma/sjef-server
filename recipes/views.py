@@ -12,6 +12,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = (DRYPermissions,)
 
+
 class IngredientTagViewSet(viewsets.ModelViewSet):
     queryset = IngredientTag.objects.all()
     serializer_class = IngredientTagSerializer

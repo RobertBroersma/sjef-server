@@ -29,6 +29,7 @@ router.register(r'users', core_views.UserViewSet)
 router.register(r'profiles', usersettings_views.ProfileViewSet)
 router.register(r'dayplannings', planning_views.DayPlanningViewSet)
 router.register(r'mealsettings', planning_views.MealSettingViewSet)
+router.register(r'meals', planning_views.MealViewSet)
 router.register(r'recipes', recipes_views.RecipeViewSet)
 router.register(r'ingredients', recipes_views.IngredientTagViewSet)
 

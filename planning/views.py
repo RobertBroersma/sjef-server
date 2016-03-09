@@ -1,8 +1,12 @@
-from planning.models import DayPlanning, MealSetting
-from rest_framework import viewsets, permissions
-from planning.serializers import DayPlanningSerializer, MealSettingSerializer
+from planning.models import DayPlanning, MealSetting, Meal
+from rest_framework import viewsets, permissions, status
+from rest_framework.views import APIView
+from rest_framework.decorators import list_route
+from rest_framework.response import Response
+from planning.serializers import DayPlanningSerializer, MealSettingSerializer, MealSerializer
 from dry_rest_permissions.generics import DRYPermissions, DRYPermissionFiltersBase
 from django.db.models import Q
+import datetime
 
 class IsOwnerFilterBackend(DRYPermissionFiltersBase):
 
@@ -30,3 +34,38 @@ class MealSettingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user.profile)
+
+
+class MealViewSet(viewsets.ModelViewSet):
+    queryset = Meal.objects.all()
+    serializer_class = MealSerializer
+    permission_classes = (DRYPermissions,)
+    filter_backends = (IsOwnerFilterBackend,)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user.profile)
+
+    @list_route(methods=['post'])
+    def generate_mealplan(self, request):
+        if 'start' not in request.data:
+            return Response('date_start_undefined', status.HTTP_400_BAD_REQUEST)
+
+        if 'end' not in request.data:
+            return Response('date_end_undefined', status.HTTP_400_BAD_REQUEST)
+
+        calories = 4000
+        #TODO: Fetch relevant macros from database instead of hardcoding
+        macros = {
+            'protein': request.user.profile.dri_set.get(nutritional_value__label='protein').amount,
+            'fat': request.user.profile.dri_set.get(nutritional_value__label='fat').amount,
+            'carbs': request.user.profile.dri_set.get(nutritional_value__label='carbs').amount,
+        }
+        daterange = {
+            'start': datetime.datetime.strptime(request.data['start'], '%Y-%m-%d').date(),
+            'end': datetime.datetime.strptime(request.data['end'], '%Y-%m-%d').date()
+        }
+
+        mealplan = Meal.generate_mealplan(request.user.profile, calories, macros, daterange)
+
+        serializer = self.get_serializer(mealplan, many=True)
+        return Response(serializer.data)
