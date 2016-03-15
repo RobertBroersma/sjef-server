@@ -42,6 +42,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'dry_rest_permissions',
+    'crispy_forms',
 ]
 
 LOCAL_APPS = [

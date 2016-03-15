@@ -32,13 +32,29 @@ class IngredientTag(models.Model):
 
 class Ingredient(models.Model):
     recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE)
-    ingredient_tag = models.ForeignKey(IngredientTag, on_delete=models.CASCADE)
+    ingredient_tag = models.ForeignKey(IngredientTag, on_delete=models.CASCADE, related_name='ingredients')
     amount = models.FloatField()
     unit = models.CharField(max_length=255)
 
     def __str__(self):
         return (str(self.amount) + self.unit + ' ' + self.ingredient_tag.label).encode('ascii', 'replace')
 
+    @staticmethod
+    def has_read_permission(request):
+        return True
+
+    def has_object_read_permission(self, request):
+        return True
+
+    @staticmethod
+    @authenticated_users
+    @allow_staff_or_superuser
+    def has_write_permission(request):
+        return False
+
+    @allow_staff_or_superuser
+    def has_object_write_permission(request):
+        return False
 
 class RecipeNutrition(models.Model):
     nutritional_value = models.ForeignKey(NutritionalValue, on_delete=models.CASCADE)
@@ -50,6 +66,9 @@ class RecipeNutrition(models.Model):
 
 class Recipe(models.Model):
     name = models.CharField(max_length=255)
+    cook_time = models.FloatField()
+    source_url = models.URLField()
+    source_img = models.URLField()
     ingredients = models.ManyToManyField(IngredientTag, through=Ingredient)
     tags = models.ManyToManyField(Tag, blank=True)
     nutritions = models.ManyToManyField(NutritionalValue, through=RecipeNutrition)
@@ -77,16 +96,16 @@ class Recipe(models.Model):
     def has_object_write_permission(self, request):
         return request.user.profile == self.owner
 
-def calculate_nutrition(sender, instance, **kwargs):
-    energy = instance.recipenutrition_set.get(nutritional_value__label='calories').amount
-    protein = instance.recipenutrition_set.get(nutritional_value__label='protein').amount
-    carbs = instance.recipenutrition_set.get(nutritional_value__label='carbs').amount
-    fat = instance.recipenutrition_set.get(nutritional_value__label='fat').amount
-
-    if energy > 0:
-        instance.energy = energy
-        instance.protein_relative = 4 * protein / energy
-        instance.carbs_relative = 4 * carbs / energy
-        instance.fat_relative = 4 * fat / energy
-
-pre_save.connect(calculate_nutrition, sender=Recipe)
+# def calculate_nutrition(sender, instance, **kwargs):
+#     energy = instance.recipenutrition_set.get(nutritional_value__label='calories').amount
+#     protein = instance.recipenutrition_set.get(nutritional_value__label='protein').amount
+#     carbs = instance.recipenutrition_set.get(nutritional_value__label='carbs').amount
+#     fat = instance.recipenutrition_set.get(nutritional_value__label='fat').amount
+#
+#     if energy > 0:
+#         instance.energy = energy
+#         instance.protein_relative = 4 * protein / energy
+#         instance.carbs_relative = 4 * carbs / energy
+#         instance.fat_relative = 4 * fat / energy
+#
+# pre_save.connect(calculate_nutrition, sender=Recipe)

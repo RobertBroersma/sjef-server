@@ -9,18 +9,17 @@ class IngredientTagSerializer(serializers.ModelSerializer):
 		fields = ('id', 'label')
 
 class IngredientSerializer(serializers.ModelSerializer):
-	ingredient_tag = IngredientTagSerializer()
 
 	class Meta:
 		model = Ingredient
 		fields = ('amount', 'unit', 'ingredient_tag')
+		depth = 1
 
 class NutritionsSerializer(serializers.ModelSerializer):
-	nutritional_value = NutritionalValueSerializer()
-
 	class Meta:
 		model = RecipeNutrition
 		fields = ('amount', 'nutritional_value')
+		depth = 1
 
 class RecipeSerializer(serializers.ModelSerializer):
 	ingredients = IngredientSerializer(source='ingredient_set', many=True)
@@ -30,4 +29,4 @@ class RecipeSerializer(serializers.ModelSerializer):
 		model = Recipe
 		fields = ('id', 'url', 'name', 'ingredients', 'tags', 'nutritions', 'owner')
 		read_only_fields = ('owner',)
-		depth = 1
+		depth = 2

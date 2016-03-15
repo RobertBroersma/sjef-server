@@ -16,6 +16,8 @@ class Profile(models.Model):
             name += self.first_name
         if (self.last_name):
             name += ' ' + self.last_name
+        if name == '':
+            name = self.user.username
 
         return name
 
@@ -40,6 +42,10 @@ class DRI(models.Model):
 
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        profile = Profile(user=instance)
-        profile.save()
+        profile = Profile.objects.create(user=instance)
+
+        DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='calories'), amount=4000)
+        DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='protein'), amount=0.3)
+        DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='carbs'), amount=0.4)
+        DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='fat'), amount=0.3)
 post_save.connect(create_profile, sender=User)

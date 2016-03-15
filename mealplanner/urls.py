@@ -32,6 +32,7 @@ router.register(r'mealsettings', planning_views.MealSettingViewSet)
 router.register(r'meals', planning_views.MealViewSet)
 router.register(r'recipes', recipes_views.RecipeViewSet)
 router.register(r'ingredients', recipes_views.IngredientTagViewSet)
+router.register(r'groceries', recipes_views.IngredientViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
