@@ -1,7 +1,16 @@
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions
+from django.db.models import Q
+from dry_rest_permissions.generics import DRYPermissionFiltersBase
 from core.serializers import UserSerializer
 
+class IsOwnerFilterBackend(DRYPermissionFiltersBase):
+
+    def filter_list_queryset(self, request, queryset, view):
+        """
+        Limits all list requests to only be seen by the owners or creators.
+        """
+        return queryset.filter(Q(owner=request.user.profile))
 
 class UserViewSet(viewsets.ModelViewSet):
     """

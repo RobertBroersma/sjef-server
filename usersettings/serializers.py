@@ -1,8 +1,13 @@
-from usersettings.models import Profile
+from usersettings.models import Profile, DRI
 from rest_framework import serializers
 
-
-class ProfileSerializer(serializers.HyperlinkedModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = Profile
-		fields = ('url', 'id', 'user', 'first_name', 'last_name')
+		fields = ('id', 'dri_set', 'user')
+		depth = 2
+
+class DRISerliazer(serializers.ModelSerializer):
+	class Meta:
+		model = DRI
+		fields = ('nutritional_value', 'amount')

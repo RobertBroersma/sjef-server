@@ -9,7 +9,6 @@ class IngredientTagSerializer(serializers.ModelSerializer):
 		fields = ('id', 'label')
 
 class IngredientSerializer(serializers.ModelSerializer):
-
 	class Meta:
 		model = Ingredient
 		fields = ('amount', 'unit', 'ingredient_tag')
@@ -27,6 +26,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Recipe
-		fields = ('id', 'url', 'name', 'ingredients', 'tags', 'nutritions', 'owner')
+		fields = ('id', 'url', 'name', 'ingredients', 'tags', 'nutritions', 'owner', 'cook_time', 'source_url', 'source_img', 'energy', 'carbs_relative', 'protein_relative', 'fat_relative')
 		read_only_fields = ('owner',)
 		depth = 2

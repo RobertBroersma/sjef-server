@@ -7,8 +7,6 @@ from django.db.models.signals import post_save
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    first_name = models.CharField(max_length=255, null=True, blank=True)
-    last_name = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         name = ''
@@ -39,6 +37,20 @@ class DRI(models.Model):
     owner = models.ForeignKey('Profile', on_delete=models.CASCADE, null=True)
     nutritional_value = models.ForeignKey(NutritionalValue, on_delete=models.CASCADE, null=True)
     amount = models.FloatField()
+
+    @staticmethod
+    def has_read_permission(request):
+        return True
+
+    def has_object_read_permission(self, request):
+        return request.user.profile == self.owner
+
+    @staticmethod
+    def has_write_permission(request):
+        return True
+
+    def has_object_write_permission(self, request):
+        return request.user.profile == self.owner
 
 def create_profile(sender, instance, created, **kwargs):
     if created:

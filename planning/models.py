@@ -134,7 +134,7 @@ class Meal(models.Model):
         d = daterange['start']
         delta = datetime.timedelta(days=1)
         while d <= daterange['end']:
-            dayplannings = DayPlanning.objects.filter(day_of_the_week=d.weekday())
+            dayplannings = DayPlanning.objects.filter(day_of_the_week=d.weekday(), owner=profile)
             Meal.objects.filter(date=d).delete()
 
             total_meal_size = dayplannings.aggregate(total_size=models.Sum('meal_setting__size'))['total_size']
@@ -147,7 +147,8 @@ class Meal(models.Model):
                     index = 49
 
                 recipe = recipes[index]
-                meal = Meal.objects.create(date=d, recipe=recipe, day_planning=day_planning, owner=profile, servings=round(2 * energy / total_meal_size / recipe.energy)/2)
+                meal_size = day_planning.meal_setting.size
+                meal = Meal.objects.create(date=d, recipe=recipe, day_planning=day_planning, owner=profile, servings=round(2 * meal_size * energy / total_meal_size / recipe.energy)/2)
                 plan.append(meal)
             d += delta
 
