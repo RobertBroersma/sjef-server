@@ -9,15 +9,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        name = ''
-        if (self.first_name):
-            name += self.first_name
-        if (self.last_name):
-            name += ' ' + self.last_name
-        if name == '':
-            name = self.user.username
-
-        return name
+        return self.user.username
 
     @staticmethod
     def has_read_permission(request):
@@ -56,7 +48,7 @@ def create_profile(sender, instance, created, **kwargs):
     if created:
         profile = Profile.objects.create(user=instance)
 
-        DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='calories'), amount=4000)
+        DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='calories'), amount=2500)
         DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='protein'), amount=0.3)
         DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='carbs'), amount=0.4)
         DRI.objects.create(owner=profile, nutritional_value=NutritionalValue.objects.get(label='fat'), amount=0.3)

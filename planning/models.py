@@ -134,22 +134,58 @@ class Meal(models.Model):
         d = daterange['start']
         delta = datetime.timedelta(days=1)
         while d <= daterange['end']:
-            dayplannings = DayPlanning.objects.filter(day_of_the_week=d.weekday(), owner=profile)
             Meal.objects.filter(date=d).delete()
-
+            dayplannings = DayPlanning.objects.filter(day_of_the_week=d.weekday(), owner=profile).order_by('?')
             total_meal_size = dayplannings.aggregate(total_size=models.Sum('meal_setting__size'))['total_size']
-            for day_planning in dayplannings:
-                #TODO: Refactor to not use database level ABS?
-                recipes = Recipe.objects.annotate(carbs_deviation=Func(F('carbs_relative') - macros['carbs'], function='ABS'), protein_deviation=Func(F('protein_relative') - macros['protein'], function='ABS'), fat_deviation=Func(F('fat_relative') - macros['fat'], function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
 
-                index = int(random.expovariate(0.1))
+            desired_kcal_from_carbs = macros['carbs'] * energy
+            desired_kcal_from_protein = macros['protein'] * energy
+            desired_kcal_from_fat = macros['fat'] * energy
+
+            for day_planning in dayplannings:
+                meal_size = day_planning.meal_setting.size
+                current_kcal_from = Meal.get_current_kcal_from(plan)
+
+                meal_kcal_from_carbs = desired_kcal_from_carbs - current_kcal_from['carbs']
+                meal_kcal_from_protein = desired_kcal_from_protein - current_kcal_from['protein']
+                meal_kcal_from_fat = desired_kcal_from_fat - current_kcal_from['fat']
+                meal_kcal_total_desired = meal_kcal_from_carbs + meal_kcal_from_protein + meal_kcal_from_fat
+
+                meal_rel_carbs = meal_kcal_from_carbs / meal_kcal_total_desired
+                meal_rel_protein = meal_kcal_from_protein / meal_kcal_total_desired
+                meal_rel_fat = meal_kcal_from_fat / meal_kcal_total_desired
+
+                if len(plan) <= 0:
+                    recipes = Recipe.objects.order_by('?')[:50]
+                else:
+                    #TODO: Refactor to not use database level ABS?
+                    recipes = Recipe.objects.annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+
+                index = int(random.expovariate(0.05))
                 if index > 49:
                     index = 49
 
                 recipe = recipes[index]
-                meal_size = day_planning.meal_setting.size
                 meal = Meal.objects.create(date=d, recipe=recipe, day_planning=day_planning, owner=profile, servings=round(2 * meal_size * energy / total_meal_size / recipe.energy)/2)
                 plan.append(meal)
             d += delta
 
         return plan
+
+    @staticmethod
+    def get_current_kcal_from(plan):
+        macros = {
+            'carbs': 0,
+            'protein': 0,
+            'fat': 0,
+        }
+
+        if (len(plan) <= 0):
+            return macros
+
+        for meal in plan:
+            macros['carbs'] += meal.recipe.carbs_relative * meal.recipe.energy * meal.servings
+            macros['protein'] += meal.recipe.protein_relative * meal.recipe.energy * meal.servings
+            macros['fat'] += meal.recipe.fat_relative * meal.recipe.energy * meal.servings
+
+        return macros
