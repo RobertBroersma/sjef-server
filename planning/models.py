@@ -38,6 +38,7 @@ class MealSetting(models.Model):
     size = models.FloatField(default=1)
     owner = models.ForeignKey(Profile)
     tags = models.ManyToManyField(Tag, blank=True)
+    cook_time = models.FloatField(default=15)
 
     def __str__(self):
         return self.label
@@ -61,7 +62,7 @@ class MealSetting(models.Model):
 class DayPlanning(models.Model):
     day_of_the_week = models.IntegerField()
     meal_setting = models.ForeignKey(MealSetting)
-    leftovers_from = models.ForeignKey('DayPlanning', null=True, blank=True)
+    leftovers_from = models.ForeignKey('DayPlanning', null=True, blank=True, related_name='extra_for')
     time = models.TimeField()
     week_planning = models.ForeignKey(WeekPlanning)
     owner = models.ForeignKey(Profile)
@@ -135,7 +136,7 @@ class Meal(models.Model):
         delta = datetime.timedelta(days=1)
         while d <= daterange['end']:
             Meal.objects.filter(date=d).delete()
-            dayplannings = DayPlanning.objects.filter(day_of_the_week=d.weekday(), owner=profile).order_by('?')
+            dayplannings = DayPlanning.objects.filter(day_of_the_week=d.weekday(), owner=profile).order_by('leftovers_from', '?')
             total_meal_size = dayplannings.aggregate(total_size=models.Sum('meal_setting__size'))['total_size']
 
             desired_kcal_from_carbs = macros['carbs'] * energy
@@ -144,6 +145,8 @@ class Meal(models.Model):
 
             for day_planning in dayplannings:
                 meal_size = day_planning.meal_setting.size
+                meal_tags = list(day_planning.meal_setting.tags.values_list('id', flat=True))
+                cook_time = day_planning.meal_setting.cook_time
                 current_kcal_from = Meal.get_current_kcal_from(plan)
 
                 meal_kcal_from_carbs = desired_kcal_from_carbs - current_kcal_from['carbs']
@@ -155,17 +158,22 @@ class Meal(models.Model):
                 meal_rel_protein = meal_kcal_from_protein / meal_kcal_total_desired
                 meal_rel_fat = meal_kcal_from_fat / meal_kcal_total_desired
 
-                if len(plan) <= 0:
-                    recipes = Recipe.objects.order_by('?')[:50]
+                if day_planning.leftovers_from:
+                    leftover_meal = Meal.objects.filter(day_planning=day_planning.leftovers_from, date__lte=d).order_by('-date').first()
+                    recipe = leftover_meal.recipe
                 else:
-                    #TODO: Refactor to not use database level ABS?
-                    recipes = Recipe.objects.annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+                    if len(plan) <= 0:
+                        recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).order_by('?')[:50]
+                    else:
+                        #TODO: Refactor to not use database level ABS?
+                        recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
 
-                index = int(random.expovariate(0.05))
-                if index > 49:
-                    index = 49
+                    index = int(random.expovariate(0.2))
+                    if index > recipes.count():
+                        index = recipes.count()
 
-                recipe = recipes[index]
+                    recipe = recipes[index]
+
                 meal = Meal.objects.create(date=d, recipe=recipe, day_planning=day_planning, owner=profile, servings=round(2 * meal_size * energy / total_meal_size / recipe.energy)/2)
                 plan.append(meal)
             d += delta

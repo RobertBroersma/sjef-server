@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from core.models import NutritionalValue
+from core.models import NutritionalValue, Tag
 from rest_framework import serializers
 
 
@@ -26,3 +26,8 @@ class NutritionalValueSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = NutritionalValue
 		fields = ('label', 'unit')
+
+class TagSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Tag
+		fields = ('id', 'label',)

@@ -2,7 +2,8 @@ from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions
 from django.db.models import Q
 from dry_rest_permissions.generics import DRYPermissionFiltersBase
-from core.serializers import UserSerializer
+from core.serializers import UserSerializer, TagSerializer
+from core.models import Tag
 
 class IsOwnerFilterBackend(DRYPermissionFiltersBase):
 
@@ -18,4 +19,9 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all().order_by()
     serializer_class = UserSerializer
+    permission_classes = (permissions.AllowAny,)
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all().order_by()
+    serializer_class = TagSerializer
     permission_classes = (permissions.AllowAny,)

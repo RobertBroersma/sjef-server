@@ -140,6 +140,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CORS_ORIGIN_WHITELIST = (
     'localhost:9000',
+    '127.0.0.1',
+    '188.166.8.85'
 )
 
 

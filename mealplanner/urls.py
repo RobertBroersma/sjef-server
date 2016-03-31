@@ -26,6 +26,7 @@ from rest_framework_jwt import views as jwt_views
 
 router = routers.DefaultRouter()
 router.register(r'users', core_views.UserViewSet)
+router.register(r'tags', core_views.TagViewSet)
 router.register(r'profiles', usersettings_views.ProfileViewSet)
 router.register(r'dris', usersettings_views.DRIViewSet)
 router.register(r'dayplannings', planning_views.DayPlanningViewSet)
