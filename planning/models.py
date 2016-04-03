@@ -163,14 +163,21 @@ class Meal(models.Model):
                     recipe = leftover_meal.recipe
                 else:
                     if len(plan) <= 0:
-                        recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).order_by('?')[:50]
+                        # TODO: remove hotfix with meal_tags empty
+                        if len(meal_tags) > 0:
+                            recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).order_by('?')[:50]
+                        else:
+                            recipes = Recipe.objects.filter(cook_time__lte=cook_time).order_by('?')[:50]
                     else:
                         #TODO: Refactor to not use database level ABS?
-                        recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+                        if len(meal_tags) > 0:
+                            recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+                        else:
+                            recipes = Recipe.objects.filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
 
                     index = int(random.expovariate(0.2))
                     if index > recipes.count():
-                        index = recipes.count()
+                        index = recipes.count() - 1
 
                     recipe = recipes[index]
 
