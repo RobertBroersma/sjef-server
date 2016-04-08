@@ -1,7 +1,7 @@
 from planning.models import DayPlanning, MealSetting, Meal, WeekPlanning
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.views import APIView
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from planning.serializers import DayPlanningSerializer, MealSettingSerializer, MealSerializer, WeekPlanningSerializer
 from dry_rest_permissions.generics import DRYPermissions
@@ -55,6 +55,15 @@ class MealViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user.profile)
+
+    @detail_route(methods=['post'])
+    def swap(self, request, pk=None):
+        meal = self.get_object()
+
+        new_meal = meal.swap()
+
+        serializer = self.get_serializer(new_meal)
+        return Response(serializer.data)
 
     @list_route(methods=['post'])
     def generate_mealplan(self, request):

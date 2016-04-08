@@ -128,6 +128,37 @@ class Meal(models.Model):
     def has_object_write_permission(self, request):
         return request.user.profile == self.owner
 
+    def swap(self):
+        #TODO: Base numbers on aggregated dayplannings / current plan?
+        meal_size = self.day_planning.meal_setting.size
+        meal_tags = list(self.day_planning.meal_setting.tags.values_list('id', flat=True))
+        cook_time = self.day_planning.meal_setting.cook_time
+        current_energy = self.recipe.energy * self.servings
+
+        meal_rel_carbs = self.recipe.carbs_relative
+        meal_rel_protein = self.recipe.protein_relative
+        meal_rel_fat = self.recipe.fat_relative
+
+        if len(meal_tags) > 0:
+            recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+        else:
+            recipes = Recipe.objects.filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+
+        index = int(random.expovariate(0.2))
+        if index > recipes.count():
+            index = recipes.count() - 1
+
+        recipe = recipes[index]
+
+        self.recipe = recipe
+        if current_energy > 0:
+            self.servings = round(2 * current_energy / recipe.energy)/2
+        else:
+            self.servings = 1
+        self.save()
+
+        return self
+
     @staticmethod
     def generate_mealplan(profile, energy, macros, daterange):
         plan = []

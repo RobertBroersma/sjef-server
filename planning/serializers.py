@@ -40,5 +40,5 @@ class MealSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Meal
-		fields = ('date', 'recipe', 'day_planning', 'servings')
+		fields = ('id', 'date', 'recipe', 'day_planning', 'servings')
 		depth = 2
