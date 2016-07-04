@@ -24,6 +24,8 @@ from recipes import views as recipes_views
 
 from rest_framework_jwt import views as jwt_views
 
+from recipes.views import IngredientTagAutocomplete
+
 router = routers.DefaultRouter()
 router.register(r'users', core_views.UserViewSet)
 router.register(r'tags', core_views.TagViewSet)
@@ -44,4 +46,9 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^api-token-auth/', jwt_views.obtain_jwt_token),
+    url(
+        r'^ingredienttag-autocomplete/$',
+        IngredientTagAutocomplete.as_view(),
+        name='ingredienttag-autocomplete',
+    ),
 ]

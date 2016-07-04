@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models import F, Func
+from django.db.models import F, Func, Count
 from django.db.models.signals import post_save
 from dry_rest_permissions.generics import authenticated_users
 from usersettings.models import Profile
@@ -39,6 +39,7 @@ class MealSetting(models.Model):
     owner = models.ForeignKey(Profile)
     tags = models.ManyToManyField(Tag, blank=True)
     cook_time = models.FloatField(default=15)
+    max_ingredients = models.IntegerField(default=0) # 0 = unlimited
 
     def __str__(self):
         return self.label
@@ -139,10 +140,11 @@ class Meal(models.Model):
         meal_rel_protein = self.recipe.protein_relative
         meal_rel_fat = self.recipe.fat_relative
 
+        recipes = Recipe.objects
         if len(meal_tags) > 0:
-            recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
-        else:
-            recipes = Recipe.objects.filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+            recipes = recipes.filter(tags__in=meal_tags)
+
+        recipes = recipes.filter(owner__user__username='robert').filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
 
         index = int(random.expovariate(0.2))
         if index > recipes.count():
@@ -178,6 +180,7 @@ class Meal(models.Model):
                 meal_size = day_planning.meal_setting.size
                 meal_tags = list(day_planning.meal_setting.tags.values_list('id', flat=True))
                 cook_time = day_planning.meal_setting.cook_time
+                max_ingredients = day_planning.meal_setting.max_ingredients
                 current_kcal_from = Meal.get_current_kcal_from(plan)
 
                 meal_kcal_from_carbs = desired_kcal_from_carbs - current_kcal_from['carbs']
@@ -194,20 +197,25 @@ class Meal(models.Model):
                     recipe = leftover_meal.recipe
                 else:
                     if len(plan) <= 0:
+                        recipes = Recipe.objects
+
                         # TODO: remove hotfix with meal_tags empty
                         if len(meal_tags) > 0:
-                            recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).order_by('?')[:50]
-                        else:
-                            recipes = Recipe.objects.filter(cook_time__lte=cook_time).order_by('?')[:50]
-                    else:
-                        #TODO: Refactor to not use database level ABS?
-                        if len(meal_tags) > 0:
-                            recipes = Recipe.objects.filter(tags__in=meal_tags).filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
-                        else:
-                            recipes = Recipe.objects.filter(cook_time__lte=cook_time).annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation')).order_by('total_deviation')[:50]
+                            recipes = recipes.filter(tags__in=meal_tags)
 
-                    index = int(random.expovariate(0.2))
-                    if index > recipes.count():
+                        recipes = recipes.filter(cook_time__lte=cook_time).annotate(total_ingredients=Count('ingredients')).filter(total_ingredients__lte=max_ingredients).order_by('?')[:50]
+                    else:
+                        recipes = Recipe.objects
+                        if len(meal_tags) > 0:
+                            recipes = recipes.filter(tags__in=meal_tags)
+
+                        recipes = recipes.filter(cook_time__lte=cook_time)
+                        recipes = recipes.annotate(carbs_deviation=Func(F('carbs_relative') - meal_rel_carbs, function='ABS'), protein_deviation=Func(F('protein_relative') - meal_rel_protein, function='ABS'), fat_deviation=Func(F('fat_relative') - meal_rel_fat, function='ABS'), total_deviation=F('carbs_deviation') + F('protein_deviation') + F('fat_deviation'), total_ingredients=Count('ingredients'))
+                        recipes = recipes.filter(total_ingredients__lte=max_ingredients)
+                        recipes = recipes.order_by('total_deviation')[:50]
+
+                    index = int(random.expovariate(0.5))
+                    if index >= recipes.count():
                         index = recipes.count() - 1
 
                     recipe = recipes[index]

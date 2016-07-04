@@ -5,6 +5,7 @@ from recipes.serializers import RecipeSerializer, IngredientTagSerializer, Ingre
 from dry_rest_permissions.generics import DRYPermissions
 from rest_framework.decorators import list_route
 from django.db.models import Sum, F
+from dal import autocomplete
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -38,8 +39,22 @@ class IngredientViewSet(viewsets.ModelViewSet):
         ingredients = Ingredient.objects.filter(recipe__meal__owner=request.user.profile, recipe__meal__date__gte=request.query_params['start'], recipe__meal__date__lte=request.query_params['end']).annotate(label=F('ingredient_tag__label')).values('label', 'unit').annotate(summed_amount=Sum('amount'))
 
         response = {}
-        #serializer = self.get_serializer(ingredients, many=True)
+        serializer = self.get_serializer(ingredients, many=True)
         response['results'] = ingredients
         response['count'] = ingredients.count()
 
         return Response(response)
+
+
+class IngredientTagAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        # Don't forget to filter out results depending on the visitor !
+        if not self.request.user.is_authenticated():
+            return IngredientTag.objects.none()
+
+        qs = IngredientTag.objects.all()
+
+        if self.q:
+            qs = qs.filter(label__contains=self.q)
+
+        return qs

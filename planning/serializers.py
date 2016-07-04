@@ -7,7 +7,7 @@ from core.models import Tag
 class DayPlanningSerializer(serializers.ModelSerializer):
 	week_planning_id = serializers.PrimaryKeyRelatedField(queryset=WeekPlanning.objects.all(), source='week_planning', write_only=True)
 	meal_setting_id = serializers.PrimaryKeyRelatedField(queryset=MealSetting.objects.all(), source='meal_setting', write_only=True)
-	leftovers_from_id = serializers.PrimaryKeyRelatedField(queryset=DayPlanning.objects.all(), source='leftovers_from', write_only=True)
+	leftovers_from_id = serializers.PrimaryKeyRelatedField(queryset=DayPlanning.objects.all(), source='leftovers_from', write_only=True, required=False)
 
 	class Meta:
 		model = DayPlanning

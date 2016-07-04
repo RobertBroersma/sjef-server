@@ -31,6 +31,15 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+THIRD_PARTY_APPS = [
+    'rest_framework',
+    'dry_rest_permissions',
+    'crispy_forms',
+    'django_extensions',
+    'dal',
+    'dal_select2',
+]
+
 DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,20 +49,15 @@ DJANGO_APPS = [
     'django.contrib.staticfiles',
 ]
 
-THIRD_PARTY_APPS = [
-    'rest_framework',
-    'dry_rest_permissions',
-    'crispy_forms',
-]
-
 LOCAL_APPS = [
     'core',
     'usersettings',
     'planning',
     'recipes',
+    'products',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = THIRD_PARTY_APPS + DJANGO_APPS + LOCAL_APPS
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
@@ -110,12 +114,12 @@ WSGI_APPLICATION = 'mealplanner.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'mealplanner',
-        'USER': 'django',
-        'PASSWORD': 'Ya87xWt5',
-        'HOST': 'localhost',
-        'PORT': '',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'd9hmb93s0utjgu',
+        'USER': 'fafowccqbkrmfn',
+        'PASSWORD': 'U3CCMz3XAK2o_72_tRPiBQej1G',
+        'HOST': 'ec2-54-75-238-7.eu-west-1.compute.amazonaws.com',
+        'PORT': '5432',
     }
 }
 

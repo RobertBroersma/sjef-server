@@ -67,8 +67,8 @@ class RecipeNutrition(models.Model):
 class Recipe(models.Model):
     name = models.CharField(max_length=255)
     cook_time = models.FloatField()
-    source_url = models.URLField()
-    source_img = models.URLField()
+    source_url = models.URLField(blank=True, null=True)
+    source_img = models.URLField(blank=True, null=True)
     ingredients = models.ManyToManyField(IngredientTag, through=Ingredient)
     tags = models.ManyToManyField(Tag, blank=True)
     nutritions = models.ManyToManyField(NutritionalValue, through=RecipeNutrition)
