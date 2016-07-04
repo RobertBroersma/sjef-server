@@ -17,6 +17,7 @@ from django.conf.urls import url, include
 from rest_framework import routers
 from django.contrib import admin
 
+from mealplanner import settings
 from core import views as core_views
 from usersettings import views as usersettings_views
 from planning import views as planning_views
@@ -50,5 +51,7 @@ urlpatterns = [
         r'^ingredienttag-autocomplete/$',
         IngredientTagAutocomplete.as_view(),
         name='ingredienttag-autocomplete',
+    ),
+    url(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root', settings.STATIC_ROOT}
     ),
 ]
