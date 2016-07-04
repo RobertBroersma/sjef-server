@@ -1,1 +1,1 @@
-web: gunicorn sjef.wsgi
+web: gunicorn mealplanner.wsgi
